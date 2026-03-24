@@ -43,19 +43,19 @@ The final caption burn writes directly to the user's chosen output filename inst
 
 **Phase 1 — Gather all answers before touching the video.**
 
-Run scene and silence detection first (see ffmpeg-reference.md), then ask each question using `AskUserQuestion` one at a time. Wait for every answer before starting any processing.
+Ask each question using `AskUserQuestion` one at a time. Wait for every answer before starting any processing.
 
 **Q1 — Trim or remove any sections?**
 - `Yes` —
 - `No` —
 
-If Yes → ask: **Which timestamps do you want to remove?** *(free text)*
+If Yes → ask as plain text, no options: **Which timestamps do you want to remove?** *(e.g. 0:10–0:20)*
 
 **Q2 — Mute any part of the video?**
 - `Yes`
 - `No`
 
-If Yes → ask: **Which timestamps do you want to mute?** *(free text)*
+If Yes → ask as plain text, no options: **Which timestamps do you want to mute?** *(e.g. 0:13–0:25)*
 
 **Q3 — Audio sounds uneven? Want me to normalize it?**
 - `Yes` — Even out the volume across the whole video
@@ -69,7 +69,7 @@ If Yes → ask: **Which timestamps do you want to mute?** *(free text)*
 - `Yes`
 - `No`
 
-If Yes → ask: **Which timestamps and how fast?** *(free text, e.g. 0:30–0:35 at 4x)*
+If Yes → ask as plain text, no options: **Which timestamps and how fast?** *(e.g. 0:30–0:35 at 4x)*
 
 **Q6 — Captions?**
 - `Default` — Spoken word yellow, rest white, bottom position
