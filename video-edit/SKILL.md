@@ -49,13 +49,13 @@ Ask each question using `AskUserQuestion` one at a time. Wait for every answer b
 - `Yes` —
 - `No` —
 
-If Yes → ask as plain text, no options: **Which timestamps do you want to remove?** *(e.g. 0:10–0:20)*
+If Yes → ask as plain text, no options: **Which timestamps do you want to remove?**
 
 **Q2 — Mute any part of the video?**
 - `Yes`
 - `No`
 
-If Yes → ask as plain text, no options: **Which timestamps do you want to mute?** *(e.g. 0:13–0:25)*
+If Yes → ask as plain text, no options: **Which timestamps do you want to mute?**
 
 **Q3 — Audio sounds uneven? Want me to normalize it?**
 - `Yes` — Even out the volume across the whole video
@@ -69,14 +69,14 @@ If Yes → ask as plain text, no options: **Which timestamps do you want to mute
 - `Yes`
 - `No`
 
-If Yes → ask as plain text, no options: **Which timestamps and how fast?** *(e.g. 0:30–0:35 at 4x)*
+If Yes → ask as plain text, no options: **Which timestamps and how fast?**
 
 **Q6 — Captions?**
 - `Default` — Spoken word yellow, rest white, bottom position
 - `Manual` — Choose highlight color, text color, and position
 - `No captions` — Skip captions entirely
 
-**Q7 — Output filename?** *(free text)*
+**Q7 — Output filename?**
 
 Once all answers are collected, check if the output file already exists — if it does, warn the user before starting.
 - `Overwrite` — Replace the existing file
