@@ -65,10 +65,9 @@ Type `/video-edit` to load the skill.
 ## Usage
 
 Drop a video file in the conversation. Claude will:
-1. Auto-scan for scene changes and silent gaps
-2. Ask 7 questions (trim, mute, normalize, reframe, speed, captions, filename)
-3. Process step by step using `current.MOV` as the working file
-4. Deliver the final output with captions burned in
+1. Ask 7 questions (trim, mute, normalize, reframe, speed, captions, filename)
+2. Process step by step using `current.MOV` as the working file
+3. Deliver the final output with captions burned in
 
 ## Quick Command Reference
 

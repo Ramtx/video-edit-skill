@@ -4,23 +4,6 @@ All commands use `current.MOV` as input/output per the pipeline rule. Replace ti
 
 ---
 
-## Auto-scan (run before asking questions)
-
-**Scene detection** — timestamps where visual content changes significantly:
-```bash
-ffmpeg -i current.MOV -vf "select='gt(scene,0.3)',showinfo" -vsync vfr -f null - 2>&1 \
-  | grep "pts_time" | awk -F'pts_time:' '{print $2}' | awk '{print $1}'
-```
-
-**Silence detection** — audio gaps below -30dB for more than 1.5s (dead air):
-```bash
-ffmpeg -i current.MOV -af silencedetect=noise=-30dB:d=1.5 -f null - 2>&1 | grep "silence_"
-```
-
-Present results to user: "I found scene changes at 0:12, 0:45 and silence gaps at 0:08–0:11, 1:22–1:25. Want to cut any of these?"
-
----
-
 ## Step 1 — Cut segments / mute sections
 
 ```bash
@@ -54,7 +37,7 @@ Single-pass filter_complex — all segments share the same encode pipeline (no s
 ffmpeg -i current.MOV -filter_complex \
 "[0:v]trim=0:30,setpts=PTS-STARTPTS[v1]; \
 [0:a]atrim=0:30,asetpts=PTS-STARTPTS[a1]; \
-[0:v]trim=30:35,setpts=PTS-STARTPTS,minterpolate=fps=60:mi_mode=mci,setpts=2*PTS,drawtext=text='🐢 0.5x':fontsize=40:fontcolor=white:x=w-tw-30:y=30:shadowcolor=black:shadowx=2:shadowy=2[v2]; \
+[0:v]trim=30:35,setpts=PTS-STARTPTS,minterpolate=fps=60:mi_mode=mci,setpts=2*PTS,drawtext=text='0.5x':fontsize=40:fontcolor=white:x=w-tw-30:y=30:shadowcolor=black:shadowx=2:shadowy=2[v2]; \
 [0:a]atrim=30:35,asetpts=PTS-STARTPTS,atempo=0.5[a2]; \
 [0:v]trim=35,setpts=PTS-STARTPTS[v3]; \
 [0:a]atrim=35,asetpts=PTS-STARTPTS[a3]; \
@@ -67,16 +50,16 @@ ffmpeg -i current.MOV -filter_complex \
 - `mi_mode=mci` — motion compensated interpolation (best quality)
 - `setpts=2*PTS` — 0.5x speed. Use `setpts=4*PTS` for 0.25x
 - `atempo=0.5` — slows audio. Chain two for 0.25x: `atempo=0.5,atempo=0.5` (atempo range: 0.5–2.0)
-- Emoji overlay is inline in `drawtext` — change `🐢 0.5x` to `⚡ 2x` for speed-up
+- Overlay is inline in `drawtext` — show the speed value only, e.g. `0.5x` or `2x`
 
 **Speed reference:**
 
-| Effect | `setpts` | `atempo` | Emoji label |
-|--------|----------|----------|-------------|
-| 0.5x slow | `setpts=2*PTS` | `atempo=0.5` | 🐢 0.5x |
-| 0.25x slow | `setpts=4*PTS` | `atempo=0.5,atempo=0.5` | 🐢 0.25x |
-| 2x fast | `setpts=0.5*PTS` | `atempo=2.0` | ⚡ 2x |
-| 4x fast | `setpts=0.25*PTS` | `atempo=2.0,atempo=2.0` | ⚡ 4x |
+| Effect | `setpts` | `atempo` | Label |
+|--------|----------|----------|-------|
+| 0.5x slow | `setpts=2*PTS` | `atempo=0.5` | `0.5x` |
+| 0.25x slow | `setpts=4*PTS` | `atempo=0.5,atempo=0.5` | `0.25x` |
+| 2x fast | `setpts=0.5*PTS` | `atempo=2.0` | `2x` |
+| 4x fast | `setpts=0.25*PTS` | `atempo=2.0,atempo=2.0` | `4x` |
 
 ---
 
@@ -117,11 +100,6 @@ ffmpeg -i current.MOV -vf "crop=min(iw\,ih):min(iw\,ih),scale=1080:1080" next.MO
 ## Step 7 — Burn captions
 
 *(Steps 5 and 6 — transcribe with WhisperX + generate captions .ass file — are in captions-reference.md)*
-
-Check for existing file first:
-```bash
-[ -f output.MOV ] && echo "FILE EXISTS"
-```
 
 Burn captions only:
 ```bash

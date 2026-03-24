@@ -46,8 +46,8 @@ The final caption burn writes directly to the user's chosen output filename inst
 Ask each question using `AskUserQuestion` one at a time. Wait for every answer before starting any processing.
 
 **Q1 — Trim or remove any sections?**
-- `Yes` —
-- `No` —
+- `Yes`
+- `No`
 
 If Yes → ask as plain text, no options: **Which timestamps do you want to remove?**
 
