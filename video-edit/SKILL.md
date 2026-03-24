@@ -46,13 +46,10 @@ The final caption burn writes directly to the user's chosen output filename inst
 Run scene and silence detection first (see ffmpeg-reference.md), then ask each question using `AskUserQuestion` one at a time. Wait for every answer before starting any processing.
 
 **Q1 — Trim or remove any sections?**
-- `Manual`
-- `Suggest` — I'll suggest sections based on the scan, you approve or edit
-- `No` — Keep the full video
+- `Yes` —
+- `No` —
 
-If Suggest → show timestamps from scan and ask: **I'd suggest cutting: [timestamps]. Approve or edit?**
-- `Approve`
-- `Edit`
+If Yes → ask: **Which timestamps do you want to remove?** *(free text)*
 
 **Q2 — Mute any part of the video?**
 - `Yes`
@@ -72,11 +69,7 @@ If Yes → ask: **Which timestamps do you want to mute?** *(free text)*
 - `Yes`
 - `No`
 
-If Yes → ask: **How do you want to pick the sections?**
-- `Auto` — I'll use the silence gaps from the scan and speed those up
-- `Manual`
-
-If Auto → ask: **How fast do you want the silence gaps?** *(free text, e.g. 4x, 8x)*
+If Yes → ask: **Which timestamps and how fast?** *(free text, e.g. 0:30–0:35 at 4x)*
 
 **Q6 — Captions?**
 - `Default` — Spoken word yellow, rest white, bottom position
