@@ -43,9 +43,9 @@ The final caption burn writes directly to the user's chosen output filename inst
 
 When the user provides a video, **first run scene and silence detection automatically** (see ffmpeg-reference.md), then ask all questions in **one single message**:
 
-> 1. **Trim or remove sections?** — Manual *(give me the timestamps)* or Suggest *(I'll scan the video and suggest sections, you approve or edit them)*
+> 1. **Trim or remove sections?** — Manual or Suggest *(suggest sections, you approve or edit them)*
 > 2. **Mute any part?** Yes or no.
-> 3. **Audio normalization?** *(Evens out the volume across the whole video so loud parts aren't too loud and quiet parts aren't too soft — great for phone recordings with inconsistent levels.)* Yes or no?
+> 3. **Audio normalization?** *(Evens out the volume across the whole video)* Yes or no?
 > 4. **Social reframing?** Keep original or write which platform.
 > 5. **Do you want to speed up or slow down any part of the video?** If yes, a follow-up question will appear. Type "no" to skip.
 > 6. **Captions** — Default *(spoken word yellow, rest white, bottom position)* or Manual *(choose highlight color, text color, and position)*
@@ -53,7 +53,7 @@ When the user provides a video, **first run scene and silence detection automati
 
 If user says yes on Q5, ask:
 > **How do you want to pick the sections?**
-> - **Auto** *(I'll scan the video for silent gaps and pauses — dead air is usually the boring part — and suggest those as sections to speed up)*
+> - **Auto** *(I'll scan the video for silent gaps and pauses and suggest those as sections to speed up)*
 > - **Manual**
 
 Before writing any output file, **check if it already exists** — if it does, warn the user and ask if they want to overwrite.
