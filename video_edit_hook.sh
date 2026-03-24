@@ -22,8 +22,4 @@ if [ "$tool_name" = "Bash" ]; then
     exit 0
   fi
 
-  if echo "$command" | grep -q 'whisperx'; then
-    echo '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"WhisperX transcription — requires approval"}}'
-    exit 0
-  fi
 fi

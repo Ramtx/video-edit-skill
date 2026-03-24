@@ -41,22 +41,47 @@ The final caption burn writes directly to the user's chosen output filename inst
 
 ## Workflow — Start Here
 
-When the user provides a video, **first run scene and silence detection automatically** (see ffmpeg-reference.md), then ask all questions in **one single message**:
+**Phase 1 — Gather all answers before touching the video.**
 
-> 1. **Trim or remove sections?** — Manual or Suggest *(suggest sections, you approve or edit them)*
-> 2. **Mute any part?** Yes or no.
-> 3. **Audio normalization?** *(Evens out the volume across the whole video)* Yes or no?
-> 4. **Social reframing?** Keep original or write which platform.
-> 5. **Do you want to speed up or slow down any part of the video?** If yes, a follow-up question will appear. Type "no" to skip.
-> 6. **Captions** — Default *(spoken word yellow, rest white, bottom position)* or Manual *(choose highlight color, text color, and position)*
-> 7. **Output filename?**
+Run scene and silence detection first (see ffmpeg-reference.md), then ask each question using `AskUserQuestion` one at a time. Wait for every answer before starting any processing.
 
-If user says yes on Q5, ask:
-> **How do you want to pick the sections?**
-> - **Auto** *(I'll scan the video for silent gaps and pauses and suggest those as sections to speed up)*
-> - **Manual**
+**Q1 — Trim or remove sections?**
+Options: `Manual`, `Suggest`, `No`
 
-Before writing any output file, **check if it already exists** — if it does, warn the user and ask if they want to overwrite.
+If Suggest → show the suggested timestamps from the scan and ask:
+**These are the sections I'd suggest cutting: [timestamps]. Approve or edit?**
+Options: `Approve`, `Edit` *(user types custom timestamps)*
+
+If Manual → ask: **Which timestamps do you want to remove?** *(free text)*
+
+**Q2 — Mute any part of the video?**
+Options: `Yes`, `No`
+
+**Q3 — Audio sounds uneven? Want me to normalize it?**
+Options: `Yes`, `No`
+
+**Q4 — Social reframing?**
+Options: `Keep original`, `Custom` *(user types the platform or dimensions)*
+
+**Q5 — Speed up or slow down any part?**
+Options: `Yes`, `No`
+
+If yes on Q5, follow up immediately (still in Phase 1):
+**How do you want to pick the sections?**
+Options: `Auto`, `Manual`
+
+**Q6 — Captions?**
+Options: `Default`, `Manual`, `No captions`
+
+**Q7 — Output filename?**
+*(free text — no options)*
+
+Once all answers are collected, check if the output file already exists — if it does, warn the user before starting.
+Options: `Overwrite`, `Cancel`
+
+---
+
+**Phase 2 — Process the video step by step** using the answers from Phase 1. Do not stop between steps to ask for approval — execute each step in order and report progress as you go.
 
 ---
 
