@@ -31,10 +31,15 @@ See `references/captions-reference.md` for WhisperX + ASS caption generation.
 
 Start every job by copying the input: `cp input.MOV current.MOV`
 
-**ffmpeg cannot write to the same file it reads.** Each step writes to `next.MOV`, then renames it:
+**ffmpeg cannot write to the same file it reads.** Each step writes to `next.MOV`, then on success renames it:
 ```bash
-ffmpeg -i current.MOV ... next.MOV -y && mv next.MOV current.MOV
+ffmpeg -i current.MOV ... next.MOV -y || { echo "STEP FAILED"; exit 1; }
+mv next.MOV current.MOV
 ```
+Never use `&&` to chain ffmpeg and mv — `set -e` does not trigger on failures inside `&&` chains, so errors silently pass through.
+
+**For multi-segment operations (cuts, slow-mo):** encode each segment to its own file (`seg_01.MOV`, `seg_02.MOV`, …), then join with the concat demuxer (`-f concat`). Never use a single `filter_complex` with multiple trim + concat streams — it loads all streams into memory simultaneously and causes OOM kills on large or 4K files.
+
 The final caption burn writes directly to the user's chosen output filename instead of `current.MOV`.
 
 ---
@@ -90,8 +95,8 @@ Once all answers are collected, check if the output file already exists — if i
 
 ## Step Order
 
-1. Cut / mute sections (filter_complex)
-2. Slow-motion (filter_complex)
+1. Cut / mute sections (concat demuxer)
+2. Slow-motion (concat demuxer)
 3. Audio normalization (loudnorm)
 4. Social reframing (crop + scale)
 5. Transcribe (whisperx)

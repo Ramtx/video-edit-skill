@@ -6,7 +6,8 @@
 
 ```bash
 mkdir -p /tmp/whisperx_out
-whisperx current.MOV --model base --output_format json --output_dir /tmp/whisperx_out
+DEVICE=$(python3 -c "import torch; print('cuda' if torch.cuda.is_available() else 'cpu')" 2>/dev/null || echo "cpu")
+whisperx current.MOV --model base --device $DEVICE --output_format json --output_dir /tmp/whisperx_out
 ```
 
 - Output: `/tmp/whisperx_out/<input_basename>.json` — WhisperX names the file after the input. So `current.MOV` → `/tmp/whisperx_out/current.json`. Always derive the path from the actual input filename, never hardcode `video.json`.
