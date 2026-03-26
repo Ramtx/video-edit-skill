@@ -4,15 +4,27 @@ All commands use `current.MOV` as input/output per the pipeline rule. Replace ti
 
 ---
 
-## GPU Encoder Detection (run once at job start)
+## Job Start — Run These Once Before Any Step
 
 ```bash
+# GPU encoder — runtime test, not just compile-time check
 ffmpeg -f lavfi -i nullsrc=s=64x64 -frames:v 1 -c:v h264_nvenc -f null - 2>/dev/null \
   && VFLAGS="-c:v h264_nvenc -preset p4 -cq 18" \
   || VFLAGS="-c:v libx264 -crf 18"
+
+# Intermediate audio codec — PCM avoids AAC encoder-delay artifacts between segment joins
+SEG_AFLAGS="-c:a pcm_s16le"
+
+# Source frame rate — used to normalize all Step 2 segments before concat
+SFPS=$(ffprobe -v error -select_streams v:0 \
+  -show_entries stream=avg_frame_rate -of default=nw=1:nk=1 current.MOV)
 ```
 
-Use `$VFLAGS` in place of `-c:v libx264 -crf 18` in all encode commands below. The test encode against a synthetic source confirms the GPU encoder is actually usable at runtime (not just compiled in), so it falls back correctly on Docker hosts, after driver issues, or anywhere NVENC is present but broken. Quality is equivalent: `-cq 18` ≈ `-crf 18`.
+`$VFLAGS` — GPU encoder if usable, falls back to CPU libx264. Quality equivalent: `-cq 18` ≈ `-crf 18`.
+
+`$SEG_AFLAGS` — use uncompressed PCM for intermediate segment files so concat does not preserve per-segment AAC delay/padding.
+
+`$SFPS` — exact source playback fps as a rational string (e.g. `30000/1001`). Used in Step 2 to normalize every segment to the same fps before the concat demuxer.
 
 ---
 
@@ -23,18 +35,26 @@ One ffmpeg call per segment — avoids loading multiple decode streams into memo
 ```bash
 # Example: keep 0–13, mute 13–17, keep 17–53, skip 53–66, keep 66+
 
-ffmpeg -i current.MOV -ss 0 -to 13 $VFLAGS -c:a aac seg_01.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=0:end=13,setpts=PTS-STARTPTS[v];[0:a]atrim=start=0:end=13,asetpts=PTS-STARTPTS[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_01.MOV -y \
   || { echo "STEP 1 seg 1 FAILED"; exit 1; }
 
-ffmpeg -i current.MOV -ss 13 -to 17 -af "volume=0" $VFLAGS -c:a aac seg_02.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=13:end=17,setpts=PTS-STARTPTS[v];[0:a]atrim=start=13:end=17,asetpts=PTS-STARTPTS,volume=0[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_02.MOV -y \
   || { echo "STEP 1 seg 2 FAILED"; exit 1; }
 
-ffmpeg -i current.MOV -ss 17 -to 53 $VFLAGS -c:a aac seg_03.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=17:end=53,setpts=PTS-STARTPTS[v];[0:a]atrim=start=17:end=53,asetpts=PTS-STARTPTS[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_03.MOV -y \
   || { echo "STEP 1 seg 3 FAILED"; exit 1; }
 
 # segment 53–66 is skipped — no ffmpeg call for it
 
-ffmpeg -i current.MOV -ss 66 $VFLAGS -c:a aac seg_04.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=66,setpts=PTS-STARTPTS[v];[0:a]atrim=start=66,asetpts=PTS-STARTPTS[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_04.MOV -y \
   || { echo "STEP 1 seg 4 FAILED"; exit 1; }
 
 # Join with concat demuxer
@@ -46,10 +66,10 @@ rm -f seg_01.MOV seg_02.MOV seg_03.MOV seg_04.MOV seg_list.txt
 ```
 
 **Rules:**
-- `-ss` / `-to` after `-i` = frame-accurate seek (decodes from start, required for timestamp-precise cuts)
-- `volume=0` as `-af` filter = mute that segment's audio
+- `trim` / `atrim` + `setpts` / `asetpts` = timestamp-accurate segment boundaries without keyframe drift
+- `volume=0` after `atrim` = mute only that segment's audio
 - Skipped ranges = no ffmpeg call for that range, just omit it from the list
-- `-c:v copy -c:a aac` at concat — copies video (no re-encode), re-encodes audio once to eliminate per-segment AAC encoder-delay artifacts at boundaries
+- Intermediate audio stays PCM, then concat re-encodes audio once to AAC for the final file without per-segment AAC splice artifacts
 
 ---
 
@@ -60,28 +80,33 @@ One ffmpeg call per segment — minterpolate only on the affected segment, not t
 ```bash
 # Example: slow-mo from 0:30 to 0:35 at 0.5x speed
 
-ffmpeg -i current.MOV -ss 0 -to 30 $VFLAGS -c:a aac seg_01.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=0:end=30,setpts=PTS-STARTPTS,fps=$SFPS[v];[0:a]atrim=start=0:end=30,asetpts=PTS-STARTPTS[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_01.MOV -y \
   || { echo "STEP 2 seg 1 FAILED"; exit 1; }
 
-ffmpeg -i current.MOV -ss 30 -to 35 \
-  -vf "minterpolate=fps=60:mi_mode=mci,setpts=2*PTS,drawtext=text='0.5x':fontsize=40:fontcolor=white:x=w-tw-30:y=30:shadowcolor=black:shadowx=2:shadowy=2" \
-  -af "atempo=0.5" $VFLAGS -c:a aac seg_02.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=30:end=35,setpts=PTS-STARTPTS,minterpolate=fps=60:mi_mode=mci,setpts=2*PTS,fps=$SFPS,drawtext=text='0.5x':fontsize=40:fontcolor=white:x=w-tw-30:y=30:shadowcolor=black:shadowx=2:shadowy=2[v];[0:a]atrim=start=30:end=35,asetpts=PTS-STARTPTS,atempo=0.5[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_02.MOV -y \
   || { echo "STEP 2 seg 2 FAILED"; exit 1; }
 
-ffmpeg -i current.MOV -ss 35 $VFLAGS -c:a aac seg_03.MOV -y \
+ffmpeg -i current.MOV \
+  -filter_complex "[0:v]trim=start=35,setpts=PTS-STARTPTS,fps=$SFPS[v];[0:a]atrim=start=35,asetpts=PTS-STARTPTS[a]" \
+  -map "[v]" -map "[a]" $VFLAGS $SEG_AFLAGS seg_03.MOV -y \
   || { echo "STEP 2 seg 3 FAILED"; exit 1; }
 
 printf "file '%s'\n" seg_01.MOV seg_02.MOV seg_03.MOV > seg_list.txt
-ffmpeg -f concat -safe 0 -i seg_list.txt $VFLAGS -c:a aac next.MOV -y \
+ffmpeg -f concat -safe 0 -i seg_list.txt -c:v copy -c:a aac next.MOV -y \
   || { echo "STEP 2 concat FAILED"; exit 1; }
 mv next.MOV current.MOV
 rm -f seg_01.MOV seg_02.MOV seg_03.MOV seg_list.txt
 ```
 
 **Key flags:**
-- `minterpolate=fps=60` — generates frames to 60fps before slowing; result stays smooth 30fps after slowdown
+ - `minterpolate=fps=60` — generates frames to 60fps before slowing; `fps=$SFPS` then returns the segment to the source playback fps for concat
 - `mi_mode=mci` — motion compensated interpolation (best quality)
 - `setpts=2*PTS` — 0.5x speed. Use `setpts=4*PTS` for 0.25x
+- `fps=$SFPS` on every Step 2 segment — normalizes all intermediates to one exact nominal fps before concat
 - `atempo=0.5` — slows audio. Chain two for 0.25x: `atempo=0.5,atempo=0.5` (atempo range: 0.5–2.0)
 - Overlay is inline in `drawtext` — show the speed value only, e.g. `0.5x` or `2x`
 
