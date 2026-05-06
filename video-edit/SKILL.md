@@ -4,15 +4,16 @@ description: >
   Load this skill whenever the user wants to edit a video file. This includes:
   cutting/removing segments, muting audio sections, adding captions or subtitles,
   adding word-level highlighted captions (karaoke style), transcribing video with WhisperX,
-  or any general video processing task. Also load when the user mentions ffmpeg,
-  WhisperX, subtitles, captions, or trimming a video.
+  audio cleanup / background noise removal, or any general video processing task.
+  Also load when the user mentions ffmpeg, WhisperX, demucs, subtitles, captions,
+  or trimming a video.
   Tool location: python3 ~/tools/make_captions.py
 disable-model-invocation: true
 ---
 
 # Video Edit Skill
 
-Video editing using **ffmpeg** and **WhisperX** — cutting, muting, slow-motion, normalization, reframing, and word-level highlighted captions.
+Video editing using **ffmpeg**, **WhisperX**, and **Demucs** — cutting, muting, slow-motion, normalization, audio cleanup, reframing, and word-level highlighted captions.
 
 ## Tools
 
@@ -20,10 +21,12 @@ Video editing using **ffmpeg** and **WhisperX** — cutting, muting, slow-motion
 |------|----------|
 | ffmpeg | `ffmpeg` (system PATH) |
 | whisperx | `whisperx` (system PATH or `~/.local/bin/whisperx`) |
+| demucs | `python3.12 -m demucs` (installed via pip, uses PyTorch) |
 | make_captions.py | `~/tools/make_captions.py` |
 
 See `references/ffmpeg-reference.md` for all ffmpeg commands.
 See `references/captions-reference.md` for WhisperX + ASS caption generation.
+See `references/demucs-reference.md` for audio cleanup with Demucs.
 
 ---
 
@@ -62,26 +65,30 @@ If Yes → ask as plain text, no options: **Which timestamps do you want to remo
 
 If Yes → ask as plain text, no options: **Which timestamps do you want to mute?**
 
-**Q3 — Audio sounds uneven? Want me to normalize it?**
+**Q3 — Clean up background noise? (removes background voices, ambient sounds, traffic, etc.)**
+- `Yes` — Isolate the main voice using Demucs AI
+- `No`
+
+**Q4 — Audio sounds uneven? Want me to normalize it?**
 - `Yes` — Even out the volume across the whole video
 - `No`
 
-**Q4 — Social reframing?**
+**Q5 — Social reframing?**
 - `Keep original`
 - `Custom`
 
-**Q5 — Speed up or slow down any part?**
+**Q6 — Speed up or slow down any part?**
 - `Yes`
 - `No`
 
 If Yes → ask as plain text, no options: **Which timestamps and how fast?**
 
-**Q6 — Captions?**
+**Q7 — Captions?**
 - `Default` — Spoken word yellow, rest white, bottom position
 - `Manual` — Choose highlight color, text color, and position
 - `No captions` — Skip captions entirely
 
-**Q7 — Output filename?**
+**Q8 — Output filename?**
 
 Once all answers are collected, check if the output file already exists — if it does, warn the user before starting.
 - `Overwrite` — Replace the existing file
@@ -97,8 +104,9 @@ Once all answers are collected, check if the output file already exists — if i
 
 1. Cut / mute sections (concat demuxer)
 2. Slow-motion (concat demuxer)
-3. Audio normalization (loudnorm)
-4. Social reframing (crop + scale)
-5. Transcribe (whisperx)
-6. Generate captions (make_captions.py)
-7. Burn captions into video (ass= filter) → write final output file
+3. Audio cleanup — Demucs vocal isolation (remove background noise/voices)
+4. Audio normalization (loudnorm)
+5. Social reframing (crop + scale)
+6. Transcribe (whisperx)
+7. Generate captions (make_captions.py)
+8. Burn captions into video (ass= filter) → write final output file

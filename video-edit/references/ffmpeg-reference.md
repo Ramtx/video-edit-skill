@@ -121,7 +121,7 @@ rm -f seg_01.MOV seg_02.MOV seg_03.MOV seg_list.txt
 
 ---
 
-## Step 3 — Audio normalization
+## Step 4 — Audio normalization
 
 ```bash
 ffmpeg -i current.MOV -af loudnorm=I=-16:TP=-1.5:LRA=11 -c:v copy next.MOV -y \
@@ -136,7 +136,7 @@ mv next.MOV current.MOV
 
 ---
 
-## Step 4 — Social reframing
+## Step 5 — Social reframing
 
 ```bash
 # TikTok / Reels — 9:16 (iPhone MOV is already 9:16, no reframing needed)
@@ -163,9 +163,9 @@ mv next.MOV current.MOV
 
 ---
 
-## Step 7 — Burn captions
+## Step 8 — Burn captions
 
-*(Steps 5 and 6 — transcribe with WhisperX + generate captions .ass file — are in captions-reference.md)*
+*(Steps 6 and 7 — transcribe with WhisperX + generate captions .ass file — are in captions-reference.md)*
 
 Burn captions only:
 ```bash
@@ -181,6 +181,17 @@ ffmpeg -i current.MOV -vf "crop=ih*9/16:ih,scale=1080:1920,ass=captions.ass" $VF
 
 - `-cq/-crf 18` — high quality (18–23 is typical; lower = better; set via `$VFLAGS`)
 - Processing speed: ~10x realtime on this machine
+
+---
+
+## Python Version
+
+Always use `python3.12` for anything involving PyTorch (whisperx, demucs, torch device detection). The system `python3` may resolve to a Homebrew Python (3.14+) that does not have torch installed, causing silent fallback to CPU.
+
+```bash
+# Correct GPU detection
+DEVICE=$(python3.12 -c "import torch; print('cuda' if torch.cuda.is_available() else 'cpu')" 2>/dev/null || echo "cpu")
+```
 
 ---
 
